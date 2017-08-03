@@ -11,6 +11,7 @@ import org.springframework.integration.dsl.IntegrationFlow;
 import org.springframework.integration.dsl.IntegrationFlows;
 import org.springframework.integration.dsl.channel.MessageChannels;
 import org.springframework.messaging.MessageChannel;
+import org.springframework.messaging.MessageHeaders;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 @Configuration
@@ -20,6 +21,7 @@ public class FlowConfiguration {
     static final String INBOUND_CHANNEL = "inbound-channel";
     private static final String TASK_EXECUTOR = "task-executor";
     private static final String MESSAGE_FLOW = "message-flow";
+    private static final String ERROR_FLOW = "error-flow";
 
     @Bean(name = INBOUND_CHANNEL)
     public MessageChannel getInboundChannel() {
@@ -46,5 +48,19 @@ public class FlowConfiguration {
                     throw new RuntimeException("Test exception");
                 })
                 .get();
+    }
+
+    @Bean(name = ERROR_FLOW)
+    public IntegrationFlow getErrorIntegrationFlow() {
+        return IntegrationFlows
+                .from(MessageHeaders.ERROR_CHANNEL)
+                .handle(message ->
+                    // Payload should be a MessageDeliveryException
+                    LOG.error("\n\n*********************************************************************************\n" +
+                            "* Shouldn't the payload type of messages \n" +
+                            "* going to the error channel be 'MessageDeliveryException'?\n" +
+                            "* Here's what it really is: '{}' \n" +
+                            "*********************************************************************************\n\n", message.getPayload().getClass())
+                ).get();
     }
 }
